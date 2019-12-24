@@ -1,3 +1,10 @@
+uniform float scale;
+uniform float time;
+uniform float weight;
+uniform float wave;
+varying vec3  vNormal;
+
+// simplex noise ==============================================================
 vec3 mod289(vec3 x)
 {
     return x - floor(x * (1.0 / 289.0)) * 289.0;
@@ -141,22 +148,26 @@ float pnoise(vec3 P, vec3 rep)
     float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
     return 2.2 * n_xyz;
 }
-float f( vec3 p ) {
-    return pnoise( 1.0 * vec3( p ), vec3( 10.0, 10.0, 10.0 ) );
+// ============================================================================
+
+float hash(vec3 p){
+    return pnoise(scale * vec3(p), vec3(10.0, 10.0, 10.0));
 }
-uniform float time;
-uniform float weight;
-uniform float wave;
-varying vec3 vPosition;
-varying vec3 vModifiedNormal;
+
 void main() {
-    vec3 aniNormal = 2.0 * normal + time;
-    float f0 = weight * f( aniNormal );
-    float fx = weight * f( aniNormal + vec3( .0001, 0.0, 0.0 ) );
-    float fy = weight * f( aniNormal + vec3( 0.0, .0001, 0.0 ) );
-    float fz = weight * f( aniNormal + vec3( 0.0, 0.0, .0001 ) );
-    vec3 modifiedNormal = normalize( normal - vec3( (fx - f0) / .0001, (fy - f0) / .0001, (fz - f0) / .0001 ) );
-    vPosition = position + f0 * normal * 0.2 * wave;
-    vModifiedNormal = modifiedNormal;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( vPosition, 1.0 );
+    vec3 n = 2.0 * normal + time;
+    float f0 = weight * hash(n);
+    float fx = weight * hash(n + vec3(0.0001, 0.0,    0.0));
+    float fy = weight * hash(n + vec3(0.0,    0.0001, 0.0));
+    float fz = weight * hash(n + vec3(0.0,    0.0,    0.0001));
+
+    vNormal = normalize(normal - vec3(
+        (fx - f0) / 0.0001,
+        (fy - f0) / 0.0001,
+        (fz - f0) / 0.0001
+    ));
+
+    vec3 p = position + f0 * normal * 0.2 * wave;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }
+
