@@ -3,6 +3,7 @@ import 'whatwg-fetch';
 import Promise from 'promise-polyfill';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
+import Tweakpane from 'tweakpane';
 
 import Emitter from './emitter.js';
 import baseVs from './shader/base.vert';
@@ -32,6 +33,7 @@ class ThreeApp extends Emitter {
         // gen material
         this.shaderMaterial = new THREE.ShaderMaterial({
             uniforms: {
+                scale:  {type: "f", value: 0},
                 time:   {type: "f", value: 0},
                 weight: {type: "f", value: 0},
                 wave:   {type: "f", value: 0}
@@ -55,6 +57,38 @@ class ThreeApp extends Emitter {
     }
     eventSetting(){
         window.addEventListener('resize', this.resize, false);
+
+        this.scale = 0.5;
+        this.speed = 0.5;
+        this.weight = 1.0;
+        this.wave = 2.0;
+        const PARAMS = {
+            scale: this.scale,
+            speed: this.speed,
+            weight: this.weight,
+            wave: this.wave,
+        };
+        const pane = new Tweakpane();
+        pane.addInput(PARAMS, 'scale', {
+            min: 0.1,
+            max: 1.0,
+            step: 0.01,
+        }).on('change', (v) => {this.scale = v;});
+        pane.addInput(PARAMS, 'speed', {
+            min: 0.1,
+            max: 1.0,
+            step: 0.01,
+        }).on('change', (v) => {this.speed = v;});
+        pane.addInput(PARAMS, 'weight', {
+            min: 0.1,
+            max: 3.0,
+            step: 0.01,
+        }).on('change', (v) => {this.weight = v;});
+        pane.addInput(PARAMS, 'wave', {
+            min: 0.1,
+            max: 3.0,
+            step: 0.01,
+        }).on('change', (v) => {this.wave = v;});
     }
     resize(){
         const b = this.renderer.domElement.parentNode.getBoundingClientRect();
@@ -64,10 +98,11 @@ class ThreeApp extends Emitter {
     }
     render(){
         this.controls.update();
-        let nowTime = (Date.now() - this.startTime) / 1000;
-        this.shaderMaterial.uniforms['time'].value = nowTime * 0.75;
-        this.shaderMaterial.uniforms['weight'].value = 4.0 * (.5 + .5 * Math.sin(.00025));
-        this.shaderMaterial.uniforms['wave'].value = 1.0;
+        let nowTime = (Date.now() - this.startTime) * 0.001;
+        this.shaderMaterial.uniforms['scale'].value = this.scale;
+        this.shaderMaterial.uniforms['time'].value = nowTime * this.speed;
+        this.shaderMaterial.uniforms['weight'].value = this.weight;
+        this.shaderMaterial.uniforms['wave'].value = this.wave;
         this.renderer.render(this.scene, this.camera);
 
         requestAnimationFrame(this.render);
